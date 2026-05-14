@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Change Response Profile — Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&amp;family=DM+Sans:wght@300;400;500&amp;display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface2: #F2EFE9;
+  --border: rgba(0,0,0,0.1);
+  --border-strong: rgba(0,0,0,0.2);
+  --text: #1A1814;
+  --text-muted: #6B6760;
+  --text-faint: #9E9B96;
+  --sniff: #0F6E56; --sniff-bg: #E1F5EE; --sniff-border: #5DCAA5;
+  --scurry: #854F0B; --scurry-bg: #FAEEDA; --scurry-border: #EF9F27;
+  --hem: #A32D2D; --hem-bg: #FCEBEB; --hem-border: #F09595;
+  --haw: #185FA5; --haw-bg: #E6F1FB; --haw-border: #85B7EB;
+  --timer-ok: #0F6E56; --timer-warn: #854F0B; --timer-danger: #A32D2D;
+  --radius: 10px; --radius-sm: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+
+/* ── HEADER ── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(247,245,240,0.93); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px;
+}
+.logo { font-family: 'DM Serif Display', serif; font-size: 18px; letter-spacing: -0.02em; }
+.timer-wrap { display: flex; align-items: center; gap: 10px; }
+.timer-label { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+#timer {
+  font-family: 'DM Serif Display', serif; font-size: 28px; font-weight: 400;
+  letter-spacing: -0.02em; color: var(--timer-ok); transition: color .4s; min-width: 72px; text-align: right;
+}
+#timer.warn { color: var(--timer-warn); }
+#timer.danger { color: var(--timer-danger); }
+#timer.expired { color: var(--timer-danger); }
+
+.progress-bar-outer { position: fixed; top: 60px; left: 0; right: 0; height: 3px; background: var(--border); z-index: 99; }
+#progress-bar { height: 100%; background: var(--text); transition: width .5s ease, background .4s; width: 0%; }
+
+/* ── LAYOUT ── */
+.container { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; }
+.page-intro { margin-bottom: 2.5rem; text-align: center; }
+.page-intro h1 { font-family: 'DM Serif Display', serif; font-size: clamp(28px,5vw,42px); line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 14px; }
+.page-intro p { font-size: 15px; color: var(--text-muted); max-width: 720px; line-height: 1.7; margin: 0 auto; }
+
+/* ── LEGEND ── */
+.legend-strip {
+  display: grid; grid-template-columns: repeat(2,1fr); gap: 8px;
+  margin: 1.5rem 0 2.5rem;
+}
+@media(min-width:520px){ .legend-strip { grid-template-columns: repeat(4,1fr); } }
+.legend-item {
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.legend-name { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+.legend-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.leg-sniff .legend-name { color: var(--sniff); }
+.leg-scurry .legend-name { color: var(--scurry); }
+.leg-hem .legend-name { color: var(--hem); }
+.leg-haw .legend-name { color: var(--haw); }
+
+.section-divider { display: flex; align-items: center; gap: 14px; margin: 2.5rem 0 1.5rem; }
+.section-divider .sect-label { font-family: 'DM Serif Display', serif; font-size: 20px; white-space: nowrap; }
+.section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.list-a-accent { color: #3C3489; }
+.list-b-accent { color: #0F6E56; }
+
+/* ── SHOW/HIDE ── */
+.section-divider, .q-card, #submit-btn { display: none; }
+body.test-started .section-divider { display: flex; }
+body.test-started .q-card { display: block; }
+body.test-started #submit-btn { display: block; }
+#start-panel { text-align: center; margin: 2rem auto 0; }
+body.test-started #start-panel { display: none; }
+body.test-started .legend-strip { display: none; }
+
+#start-btn {
+  display: inline-block; padding: 14px 34px; background: var(--text); color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+  border: none; border-radius: var(--radius); cursor: pointer; letter-spacing: .01em;
+  transition: opacity .2s, transform .1s;
+}
+#start-btn:hover { opacity: .85; }
+#start-btn:active { transform: scale(.98); }
+
+/* ── CARDS ── */
+.context-text { font-size: 14px; color: var(--text); line-height: 1.65; margin: -2px 0 16px; }
+.q-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.25rem; }
+.q-card.answered { border-color: var(--border-strong); }
+.q-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.q-num { font-size: 11px; font-weight: 500; color: var(--text-faint); letter-spacing: .05em; text-transform: uppercase; padding-top: 3px; }
+.q-text { font-size: 15px; line-height: 1.7; margin-bottom: 16px; color: var(--text); }
+
+/* ── VISUALS ── */
+.visual-block { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 16px; }
+.visual-hdr { font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); padding: 7px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.inbox-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+.inbox-msg { padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); font-size: 13px; line-height: 1.45; }
+.msg-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+.from { font-weight: 500; font-size: 12px; }
+.msg-time { font-size: 11px; color: var(--text-faint); }
+.msg-subject { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
+.msg-body { font-size: 13px; }
+.chat-bubble-wrap { padding: 14px 16px; display: flex; gap: 10px; align-items: flex-start; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: #EEEDFE; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: #3C3489; flex-shrink: 0; }
+.bubble { background: var(--surface2); border-radius: 4px 12px 12px 12px; padding: 10px 14px; font-size: 14px; line-height: 1.6; max-width: 420px; }
+.update-grid { padding: 10px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.update-from { font-weight: 500; font-size: 12px; margin-bottom: 3px; }
+.update-body { font-size: 13px; }
+
+/* ── OPTIONS ── */
+.options { display: flex; flex-direction: column; gap: 8px; }
+.opt { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: background .15s, border-color .15s; }
+.opt:hover { background: var(--surface2); }
+.opt.selected { border-color: #3C3489; background: #EEEDFE; }
+.opt.disabled { cursor: default; pointer-events: none; opacity: .85; }
+.opt-letter { font-size: 13px; font-weight: 500; color: var(--text-muted); min-width: 20px; padding-top: 1px; flex-shrink: 0; }
+.opt.selected .opt-letter { color: #3C3489; }
+.opt-body { flex: 1; }
+.opt-text { font-size: 14px; line-height: 1.5; }
+.opt-note { font-size: 11px; font-weight: 500; margin-top: 6px; display: none; padding: 4px 8px; border-radius: 4px; }
+
+/* Reveal colours */
+.opt.rev-sniff { border-color: var(--sniff-border) !important; background: var(--sniff-bg) !important; }
+.opt.rev-scurry { border-color: var(--scurry-border) !important; background: var(--scurry-bg) !important; }
+.opt.rev-hem { border-color: var(--hem-border) !important; background: var(--hem-bg) !important; }
+.opt.rev-haw { border-color: var(--haw-border) !important; background: var(--haw-bg) !important; }
+.opt.rev-sniff .opt-letter { color: var(--sniff); }
+.opt.rev-scurry .opt-letter { color: var(--scurry); }
+.opt.rev-hem .opt-letter { color: var(--hem); }
+.opt.rev-haw .opt-letter { color: var(--haw); }
+.opt.rev-sniff .opt-note { color: var(--sniff); display: block; }
+.opt.rev-scurry .opt-note { color: var(--scurry); display: block; }
+.opt.rev-hem .opt-note { color: var(--hem); display: block; }
+.opt.rev-haw .opt-note { color: var(--haw); display: block; }
+.opt.user-picked::after { content: '▲ Your answer'; font-size: 10px; font-weight: 500; color: #888; margin-top: 4px; display: block; }
+
+/* ── FOOTER ── */
+.q-footer { display: none; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
+.q-hint { font-size: 12px; color: var(--text-faint); font-style: italic; }
+
+/* ── RESULTS ── */
+#results-panel { display: none; margin-top: 3rem; }
+.results-header { text-align: center; margin-bottom: 2rem; }
+.results-header h2 { font-family: 'DM Serif Display', serif; font-size: clamp(26px,4vw,38px); letter-spacing: -0.03em; margin-bottom: 8px; }
+.results-header p { color: var(--text-muted); font-size: 15px; }
+
+.scores-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+@media(min-width:520px){ .scores-grid { grid-template-columns: repeat(4,1fr); } }
+.score-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1rem; text-align: center; }
+.score-label { font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.score-count { font-family: 'DM Serif Display', serif; font-size: 34px; letter-spacing: -0.04em; line-height: 1; margin-bottom: 2px; }
+.score-band { font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px; }
+.score-bar-bg { height: 4px; background: var(--border); border-radius: 2px; }
+.score-bar { height: 4px; border-radius: 2px; }
+.score-sniff .score-count { color: var(--sniff); } .score-sniff .score-bar { background: var(--sniff); } .score-sniff .score-band { color: var(--sniff); }
+.score-scurry .score-count { color: var(--scurry); } .score-scurry .score-bar { background: var(--scurry); } .score-scurry .score-band { color: var(--scurry); }
+.score-hem .score-count { color: var(--hem); } .score-hem .score-bar { background: var(--hem); } .score-hem .score-band { color: var(--hem); }
+.score-haw .score-count { color: var(--haw); } .score-haw .score-bar { background: var(--haw); } .score-haw .score-band { color: var(--haw); }
+
+.primary-style-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; margin-bottom: 1.5rem; }
+.primary-style-card h3 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 10px; letter-spacing: -0.02em; }
+.primary-style-card p { color: var(--text-muted); line-height: 1.7; }
+
+.disclaimer-card {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1.25rem 1.5rem; margin-bottom: 2rem;
+  font-size: 13px; color: var(--text-muted); line-height: 1.7;
+}
+.disclaimer-card strong { color: var(--text); }
+
+/* ── SUBMIT ── */
+#submit-btn { display: block; width: 100%; max-width: 340px; margin: 2rem auto 0; padding: 14px 28px; background: var(--text); color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; border: none; border-radius: var(--radius); cursor: pointer; letter-spacing: .01em; transition: opacity .2s, transform .1s; }
+#submit-btn:hover { opacity: .85; }
+#submit-btn:active { transform: scale(.98); }
+
+#expired-banner { display: none; position: sticky; top: 60px; z-index: 98; background: var(--timer-danger); color: #fff; text-align: center; padding: 10px; font-size: 13px; font-weight: 500; letter-spacing: .02em; }
+#warn-msg { display: none; text-align: center; color: var(--hem); font-size: 13px; margin-top: 10px; }
+
+svg text { font-family: 'DM Sans', sans-serif; }
+</style>
+</head>
+<body>
+<header class="site-header">
+<div class="logo">CRP</div>
+<div class="timer-wrap">
+<span class="timer-label">Time left</span>
+<span id="timer">25:00</span>
+</div>
+</header>
+<div class="progress-bar-outer"><div id="progress-bar"></div></div>
+<div id="expired-banner">⏱ Time is up — answers have been locked. Submit below to see your results.</div>
+<main class="container">
+<div class="page-intro">
+<h1>Change Response Profile</h1>
+<p>16 questions, 25 minutes. Every answer sounds reasonable — choose what genuinely reflects how you think and act, not what sounds best. Results are revealed with full explanations when you submit.</p>
+</div>
+<!-- Style legend shown before test starts -->
+<div class="legend-strip">
+<div class="legend-item leg-sniff">
+<div class="legend-name">Sniff</div>
+<div class="legend-desc">Detects signals of change early. Pauses to read the pattern before acting.</div>
+</div>
+<div class="legend-item leg-scurry">
+<div class="legend-name">Scurry</div>
+<div class="legend-desc">Moves fast on incomplete information. Values momentum over certainty.</div>
+</div>
+<div class="legend-item leg-hem">
+<div class="legend-name">Hem</div>
+<div class="legend-desc">Resists change — often through caution, approval-seeking, or delay framed as prudence.</div>
+</div>
+<div class="legend-item leg-haw">
+<div class="legend-name">Haw</div>
+<div class="legend-desc">Adapts deliberately. Once the change makes sense, moves forward and updates their approach.</div>
+</div>
+</div>
+<div id="start-panel">
+<button id="start-btn" onclick="startTest()">Start the assessment</button>
+</div>
+<!-- ════════ LIST A ════════ -->
+<div class="section-divider"><span class="sect-label">List A — <span class="list-a-accent">Situational judgment</span></span></div>
+<!-- A1 -->
+<div class="q-card" id="qA1">
+<div class="q-header"><span class="q-num">A1</span></div>
+<div class="q-text">Your team's project dashboard looks identical to last month — but over two weeks you've noticed: a metric you track weekly has quietly disappeared, a new column appeared with no label explanation, and two senior teammates stopped referencing the old report entirely. Your manager hasn't said anything. Your director mentioned "reporting changes coming" in passing three weeks ago.</div>
+<p class="context-text">Your next stakeholder update is in 48 hours and relies on data from that dashboard. The old metric is the one your slide deck is built around.</p>
+<div class="options" id="opts-A1">
+
+
+
+
+
+      <div class="opt" data-style="hem" onclick="pick('A1','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Flag the discrepancy to your manager and wait for their guidance before changing anything — modifying your deck without explicit sign-off could create accountability problems later.</div>
+<div class="opt-note">Hem — uses accountability framing to avoid making a decision under uncertainty</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('A1','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Before touching anything, quietly check with one of the senior teammates who stopped using the old report — they're your clearest signal about what actually shifted and why.</div>
+<div class="opt-note">Sniff — reads the social signal to understand the change before acting on it</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('A1','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Present using the last confirmed data you trust, note clearly in your deck that a reporting change appears underway, and follow up on the new metric right after the update.</div>
+<div class="opt-note">Haw — adapts transparently and keeps moving without waiting for a perfect picture</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('A1','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Rebuild your slide deck around the new column right now — you can't present stakeholders data from a metric that may already be deprecated.</div>
+<div class="opt-note">Scurry — acts immediately on incomplete information to preserve delivery</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff pauses to read the signal. Haw adapts and moves. Notice the difference.</span></div>
+</div>
+<!-- A2 -->
+<div class="q-card" id="qA2">
+<div class="q-header"><span class="q-num">A2</span></div>
+<div class="q-text">The client approval platform goes down at 9 AM. Three approvals are due by noon. IT says restoration is likely by 11:30 — but they said the same thing last time and it took until 3 PM. Two of the three clients are in different time zones. One approval is for a high-value account your VP is watching closely.</div>
+<p class="context-text">Company policy: "verbal or email approval is acceptable in documented system outage situations." Most of your team doesn't know this policy exists.</p>
+<div class="options" id="opts-A2">
+
+
+
+
+
+      <div class="opt" data-style="scurry" onclick="pick('A2','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Invoke the outage policy immediately and contact all three clients by email right now — there's already a documented path available, and waiting costs you deadline safety.</div>
+<div class="opt-note">Scurry — moves fast using whatever path is available, doesn't wait to gather more signal</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('A2','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Send all three clients a short proactive note explaining the situation now, buy flexibility on timing, then reassess your options at 10 AM with a clearer picture of IT's progress.</div>
+<div class="opt-note">Haw — adapts the situation deliberately, preserves options while gathering more information</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('A2','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Check IT's actual track record before deciding anything — if their last estimated restoration time was wrong by hours, that's the most important data point you have right now.</div>
+<div class="opt-note">Sniff — reads past patterns to calibrate trust in current information before acting</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('A2','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Wait until 10:30 — invoking an outage policy without manager sign-off could create liability issues, and IT may still restore access in time to avoid the problem entirely.</div>
+<div class="opt-note">Hem — liability framing used to delay action while the deadline shrinks</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff assesses before acting. Scurry acts without assessing. Both move — the difference is sequencing.</span></div>
+</div>
+<!-- A3 Visual -->
+<div class="q-card" id="qA3">
+<div class="q-header"><span class="q-num">A3</span></div>
+<div class="q-text">You're reviewing 5 weeks of team activity during a system transition. Leadership says the rollout is "going well." Which response most accurately reads what the data is telling you?</div>
+<div class="visual-block">
+<div class="visual-hdr">Team activity — weeks 1–5 (transition started week 3)</div>
+<svg style="width:100%;display:block" viewbox="0 0 560 205" xmlns="http://www.w3.org/2000/svg">
+<style>.ax{font-size:10px;fill:#9E9B96}.note{font-size:9px}</style>
+<line stroke="#e0ddd8" stroke-width=".5" x1="90" x2="90" y1="15" y2="162"></line>
+<line stroke="#e0ddd8" stroke-width=".5" x1="90" x2="545" y1="162" y2="162"></line>
+<line stroke="#F09595" stroke-dasharray="3,3" stroke-width=".5" x1="275" x2="275" y1="10" y2="166"></line>
+<text class="note" style="fill:#A32D2D" x="278" y="10">transition starts</text>
+<text class="ax" text-anchor="middle" x="180" y="178">Wk 1</text><text class="ax" text-anchor="middle" x="270" y="178">Wk 2</text><text class="ax" text-anchor="middle" x="360" y="178">Wk 3</text><text class="ax" text-anchor="middle" x="450" y="178">Wk 4</text><text class="ax" text-anchor="middle" x="530" y="178">Wk 5</text>
+<text class="ax" text-anchor="end" x="85" y="30">A</text>
+<rect fill="#AFA9EC" height="28" rx="2" width="16" x="158" y="18"></rect><rect fill="#AFA9EC" height="28" rx="2" width="16" x="248" y="18"></rect><rect fill="#AFA9EC" height="20" rx="2" width="16" x="338" y="26"></rect><rect fill="#AFA9EC" height="12" rx="2" width="16" x="428" y="34"></rect><rect fill="#AFA9EC" height="4" rx="2" width="16" x="518" y="42"></rect>
+<text class="note" style="fill:#9E9B96" x="540" y="46">Submissions</text>
+<text class="ax" text-anchor="end" x="85" y="68">B</text>
+<rect fill="#5DCAA5" height="10" rx="2" width="16" x="162" y="58"></rect><rect fill="#5DCAA5" height="10" rx="2" width="16" x="252" y="58"></rect><rect fill="#5DCAA5" height="18" rx="2" width="16" x="342" y="50"></rect><rect fill="#5DCAA5" height="24" rx="2" width="16" x="432" y="44"></rect><rect fill="#5DCAA5" height="28" rx="2" width="16" x="518" y="40"></rect>
+<text class="note" style="fill:#9E9B96" x="540" y="68">Support tickets</text>
+<text class="ax" text-anchor="end" x="85" y="102">C</text>
+<rect fill="#F0997B" height="9" rx="2" width="16" x="155" y="93"></rect><rect fill="#F0997B" height="9" rx="2" width="16" x="245" y="93"></rect><rect fill="#F0997B" height="24" rx="2" width="16" x="335" y="78"></rect><rect fill="#F0997B" height="30" rx="2" width="16" x="425" y="72"></rect><rect fill="#F0997B" height="36" rx="2" width="16" x="518" y="66"></rect>
+<text class="note" style="fill:#9E9B96" x="540" y="102">Workarounds</text>
+<text class="ax" text-anchor="end" x="85" y="136">D</text>
+<rect fill="#85B7EB" height="18" rx="2" width="16" x="162" y="122"></rect><rect fill="#85B7EB" height="18" rx="2" width="16" x="252" y="122"></rect><rect fill="#85B7EB" height="20" rx="2" width="16" x="342" y="120"></rect><rect fill="#85B7EB" height="22" rx="2" width="16" x="432" y="118"></rect><rect fill="#85B7EB" height="23" rx="2" width="16" x="518" y="117"></rect>
+<text class="note" style="fill:#9E9B96" x="540" y="136">Completions</text>
+<text class="ax" text-anchor="end" x="85" y="160">E</text>
+<rect fill="#B4B2A9" height="10" rx="2" width="16" x="158" y="150"></rect><rect fill="#B4B2A9" height="12" rx="2" width="16" x="248" y="148"></rect><rect fill="#B4B2A9" height="14" rx="2" width="16" x="338" y="146"></rect><rect fill="#B4B2A9" height="16" rx="2" width="16" x="428" y="144"></rect><rect fill="#B4B2A9" height="18" rx="2" width="16" x="518" y="142"></rect>
+<text class="note" style="fill:#9E9B96" x="540" y="160">Team logins</text>
+<text class="ax" style="font-size:9px" x="200" y="196">A=purple · B=teal · C=coral · D=blue · E=gray</text>
+</svg>
+</div>
+<div class="options" id="opts-A3">
+
+
+
+
+
+      <div class="opt" data-style="haw" onclick="pick('A3','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">The ticket and workaround trends are worth flagging — but I'd raise it constructively as "friction worth monitoring" rather than a rollout failure, and propose a structured check-in at week 6 to reassess together.</div>
+<div class="opt-note">Haw — surfaces concern thoughtfully, adjusts framing to enable action without triggering defensiveness</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('A3','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Support tickets are rising fast — I'd pull together the team's friction points and send a consolidated summary to IT and my manager today so fixes can start immediately.</div>
+<div class="opt-note">Scurry — responds to the most visible signal with fast action, without deeper pattern analysis</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('A3','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Completions are holding and logins are rising — the team is engaging more with the new system. Five weeks isn't enough data to declare the rollout is failing; leadership may well be right.</div>
+<div class="opt-note">Hem — cherry-picks the reassuring metrics to avoid surfacing a problem to leadership</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('A3','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Submissions are falling while workarounds keep climbing — people are completing work by routing around the new system. That's the transition failing, regardless of what completions show on the surface.</div>
+<div class="opt-note">Sniff — reads the cross-metric behavioral pattern, not just individual data series</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff reads the pattern. Haw decides how to act on it. Both see the problem — what differs is the next move.</span></div>
+</div>
+<!-- A4 -->
+<div class="q-card" id="qA4">
+<div class="q-header"><span class="q-num">A4</span></div>
+<div class="q-text">Three weeks into a new workflow, your output is slower and quality scores have dipped slightly. A colleague shows you a different approach that works better for her. Her role has different inputs than yours, she's been at the company two years longer, and your manager recently praised you for "staying consistent during the transition."</div>
+<p class="context-text">Your manager is watching this team closely during a performance review cycle. Switching approaches mid-cycle is visible.</p>
+<div class="options" id="opts-A4">
+
+
+
+
+
+      <div class="opt" data-style="hem" onclick="pick('A4','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Stay with your current method through the review cycle — your manager already praised your consistency, her role context is different, and changing approaches mid-review creates unnecessary risk.</div>
+<div class="opt-note">Hem — uses legitimate-sounding reasons to avoid changing an approach that's already underperforming</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('A4','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Before deciding anything, map out exactly which steps in your current workflow are producing the slowdown — you can't evaluate a different approach until you know precisely where your own is breaking down.</div>
+<div class="opt-note">Sniff — diagnoses the specific failure points before considering a solution</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('A4','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Run both approaches side by side for two weeks on comparable tasks, track your output carefully, and let the results drive the decision — including sharing the data with your manager if the new approach clearly wins.</div>
+<div class="opt-note">Haw — adapts deliberately using evidence, turns the visibility risk into a transparent improvement story</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('A4','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Test her approach on one low-stakes task this week — if it performs better, switch. Waiting for a review cycle to end while your scores are declining is a cost you shouldn't accept.</div>
+<div class="opt-note">Scurry — acts quickly on new information, willing to accept the visibility risk to stop the decline</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff diagnoses before acting. Haw tests and adapts. Scurry switches fast. Hem holds the line using reasonable-sounding cover.</span></div>
+</div>
+<!-- A5 -->
+<div class="q-card" id="qA5">
+<div class="q-header"><span class="q-num">A5</span></div>
+<div class="q-text">Your organization shared a 7-week rollout timeline. Your deliverable is due Week 4. Training opens Week 2 and closes Week 3. The old system is disabled in Week 5. A colleague says "relax — Week 4 is after training, you'll be fine." What's the most important risk they're missing?</div>
+<div class="options" id="opts-A5">
+
+
+
+
+
+      <div class="opt" data-style="scurry" onclick="pick('A5','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Sign up for training the moment it opens in Week 2 and complete it as early as possible — that's the only reliable way to guarantee practice time before your Week 4 deadline.</div>
+<div class="opt-note">Scurry — acts on the risk immediately without extensive analysis, prioritizes speed of preparation</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('A5','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">The old system isn't disabled until Week 5, so if the new system isn't ready you can still complete the deliverable the old way — that's a reasonable safety net for a Week 4 deadline.</div>
+<div class="opt-note">Hem — treats a workaround as a plan, avoids confronting the real preparation gap</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('A5','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Training closes at the end of Week 3 — just days before the deadline. If anything delays your training completion, you'll attempt a high-stakes deliverable with zero practice time in the new system.</div>
+<div class="opt-note">Sniff — reads the sequencing gap in the timeline that the colleague missed</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('A5','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">My colleague is right about the order of events, but the risk is completing training with no buffer before the deadline — I'd start training early in Week 2 and schedule a practice run before Week 4.</div>
+<div class="opt-note">Haw — validates the concern, then builds a deliberate plan around the real gap</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff names the gap. Haw builds a plan around it. Scurry acts on it immediately. Hem sidesteps it with a fallback.</span></div>
+</div>
+<!-- A6 -->
+<div class="q-card" id="qA6">
+<div class="q-header"><span class="q-num">A6</span></div>
+<div class="q-text">A new approval process was introduced last month. The official process is mandatory. You've quietly been completing about 30% of approvals the old way — partly because the new system has a bug that causes occasional data loss. The bug has been logged with IT but not fixed. What should you do next?</div>
+<div class="options" id="opts-A6">
+
+
+
+
+
+      <div class="opt" data-style="haw" onclick="pick('A6','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Propose a formal temporary exception process to your manager — a transparent, documented path for at-risk approvals while the bug is open, replacing the hidden workaround with something officially sanctioned.</div>
+<div class="opt-note">Haw — stops covert resistance by converting the workaround into a legitimate, visible interim solution</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('A6','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Gather specific examples of the data loss bug — exactly when it happens, what triggers it, what gets lost — and escalate with that documentation. You can't resolve the compliance problem until the root cause is prioritized by people who can fix it.</div>
+<div class="opt-note">Sniff — identifies and precisely documents the root cause driving the workaround before escalating</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('A6','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Keep using the workaround for now and stop once the bug is fixed — using a broken mandatory system isn't really compliance, and at least the old process produces reliable output.</div>
+<div class="opt-note">Hem — self-justifying logic used to rationalize ongoing non-compliance indefinitely</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('A6','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Switch to the new process for everything immediately and document any data losses as they occur — the workaround creates compliance risk, and an audit trail of losses is better than hidden non-compliance.</div>
+<div class="opt-note">Scurry — full fast compliance, accepts the data-loss risk in exchange for ending the hidden non-compliance</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff investigates before escalating. Haw makes the workaround legitimate. Scurry stops the workaround fast. Hem keeps it going with a justification.</span></div>
+</div>
+<!-- A7 -->
+<div class="q-card" id="qA7">
+<div class="q-header"><span class="q-num">A7</span></div>
+<div class="q-text">A new system launched Monday. It's now Wednesday. Completion rates dropped 30%. Your manager sent a message: "the system is working fine on my end — can everyone check their settings?" Three teammates privately tell you it's not a settings issue. You checked — it isn't yours either. One VP is already asking questions.</div>
+<div class="options" id="opts-A7">
+
+
+
+
+
+      <div class="opt" data-style="scurry" onclick="pick('A7','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Write a clear summary of what the team is actually experiencing and send it directly to IT right now — bypassing the settings conversation gets the real problem in front of the people who can actually fix it.</div>
+<div class="opt-note">Scurry — moves fast to the right channel, skips the hierarchy to act on the real problem immediately</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('A7','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Reply to your manager's message directly — respectfully share what you found and include what your teammates reported, so the real picture is visible to the right people through the right channel.</div>
+<div class="opt-note">Haw — adapts the team's response by surfacing reality to the decision-maker, not around them</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('A7','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Before responding publicly, confirm with your teammates exactly what they're experiencing — a precise, consistent description of the actual problem is far more useful than simply contradicting the settings theory.</div>
+<div class="opt-note">Sniff — gathers clean, specific signal before surfacing the problem to decision-makers</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('A7','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Wait until you can speak privately with your manager — your team has only been on this system two days, and publicly contradicting a manager's diagnosis before having complete information could damage trust at a sensitive moment.</div>
+<div class="opt-note">Hem — social risk framing used to delay surfacing critical operational information</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff collects better signal first. Haw routes it correctly. Scurry acts now. Hem protects the relationship at the cost of useful information.</span></div>
+</div>
+<!-- A8 -->
+<div class="q-card" id="qA8">
+<div class="q-header"><span class="q-num">A8</span></div>
+<div class="q-text">You spent two days building a report template in the old system format. Today you learn the company switched to a new BI tool — your template won't transfer. The report is due in four days. Your manager says "I'm sure you can make it work." One colleague says the new tool took her a full week to learn. Another rebuilt a similar report overnight.</div>
+<p class="context-text">Your manager hasn't used the new tool themselves. Their confidence is based on your reputation, not their experience.</p>
+<div class="options" id="opts-A8">
+
+
+
+
+
+      <div class="opt" data-style="hem" onclick="pick('A8','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Take your manager's word and start rebuilding in the new tool — they know the team's capabilities and it's ultimately their responsibility to manage the delivery risk, not yours to second-guess them.</div>
+<div class="opt-note">Hem — deference to authority used to avoid owning the risk or surfacing the real uncertainty</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('A8','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Message the colleague who rebuilt overnight immediately — ask exactly what shortcuts and resources they used, then start rebuilding using their approach as a working template.</div>
+<div class="opt-note">Scurry — finds the fastest known path and moves immediately without generating new information first</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('A8','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Go back to your manager with the concrete range — one night to one full week — and ask for a real decision on scope or timeline, not reassurance. They need accurate information to manage this well.</div>
+<div class="opt-note">Haw — adapts by forcing honest planning, surfaces the uncertainty so the right person can make a real decision</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('A8','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Spend 90 minutes testing the new tool on a small section of the report today — your actual experience will tell you far more than either colleague's estimate, and gives you real data to plan the rest of the week.</div>
+<div class="opt-note">Sniff — generates first-hand evidence before committing to any plan or escalation</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff generates evidence. Scurry borrows the fastest path. Haw surfaces the real uncertainty. Hem defers and avoids.</span></div>
+</div>
+<!-- ════════ LIST B ════════ -->
+<div class="section-divider"><span class="sect-label">List B — <span class="list-b-accent">Behavioral rapid-fire</span></span></div>
+<!-- B1 — single select, 4 options each mapped to one type -->
+<div class="q-card" id="qB1">
+<div class="q-header"><span class="q-num">B1</span></div>
+<div class="q-text">Six messages. One meeting in 20 minutes. You can only read two before it starts. Which pair do you open first — and what does that choice reveal?</div>
+<div class="visual-block">
+<div class="visual-hdr">Inbox — 6 unread</div>
+<div class="inbox-list">
+<div class="inbox-msg"><div class="msg-row"><span class="from">Your manager</span><span class="msg-time">7:55 AM</span></div><div class="msg-subject">Re: today's meeting agenda</div><div class="msg-body">"Adding two items. See you at 9."</div></div>
+<div class="inbox-msg"><div class="msg-row"><span class="from">IT Security</span><span class="msg-time">7:40 AM</span></div><div class="msg-subject">Mandatory: complete security recertification by EOD</div></div>
+<div class="inbox-msg"><div class="msg-row"><span class="from">Client — Horizon Group</span><span class="msg-time">7:22 AM</span></div><div class="msg-subject">Quick question on yesterday's deliverable</div><div class="msg-body">"We noticed a field is now showing differently than before — is this intentional?"</div></div>
+<div class="inbox-msg"><div class="msg-row"><span class="from">Finance Ops</span><span class="msg-time">6:58 AM</span></div><div class="msg-subject">Expense system update — resubmit any claims from last week</div></div>
+<div class="inbox-msg"><div class="msg-row"><span class="from">Colleague — Dev</span><span class="msg-time">6:44 AM</span></div><div class="msg-subject">Heads up — the export function behaves differently after last night's push</div></div>
+<div class="inbox-msg"><div class="msg-row"><span class="from">HR</span><span class="msg-time">6:30 AM</span></div><div class="msg-subject">Updated leave policy — effective next month</div></div>
+</div>
+</div>
+<div class="options" id="opts-B1">
+
+
+
+
+
+      <div class="opt" data-style="haw" onclick="pick('B1','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Your manager (agenda items) + Colleague — Dev (export changed): I need to know what's on the meeting agenda and whether the system change will affect anything being discussed.</div>
+<div class="opt-note">Haw — balances meeting preparation with one internal change signal, adapts the two priorities together</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('B1','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Client — Horizon Group (field changed) + Colleague — Dev (export behaves differently): two live signals that the system changed in ways that could affect this morning's work and the meeting itself.</div>
+<div class="opt-note">Sniff — prioritises the two active change signals over administrative urgency or meeting prep</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('B1','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">IT Security (mandatory EOD deadline) + Finance Ops (expense resubmission): both have explicit deadlines that need to be confirmed before the day gets away from me.</div>
+<div class="opt-note">Hem — focuses on compliance obligations, misses both live system-change signals entirely</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('B1','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Your manager (agenda items added) + Client — Horizon Group (field changed): the meeting is in 20 minutes and the client message is the most time-sensitive external signal.</div>
+<div class="opt-note">Scurry — acts on immediate delivery pressure, catches one change signal but misses the internal system issue</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Which signals you notice first under time pressure is itself a signal about your change response instinct.</span></div>
+</div>
+<!-- B2 -->
+<div class="q-card" id="qB2">
+<div class="q-header"><span class="q-num">B2</span></div>
+<div class="q-text">Your manager sends this message. You've been through two failed system rollouts in the last 18 months. What is your honest internal reaction?</div>
+<div class="visual-block">
+<div class="visual-hdr">Team chat — #general</div>
+<div class="chat-bubble-wrap">
+<div class="avatar">JL</div>
+<div class="bubble">Good news — we're moving to a new project tracking method next sprint. This one was designed with team input and tested for 6 weeks. Full details tomorrow. 🚀</div>
+</div>
+</div>
+<div class="options" id="opts-B2">
+
+
+
+
+
+      <div class="opt" data-style="hem" onclick="pick('B2','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">"Here we go again. I'll do what's required, but I'm not investing real effort until I see whether this one actually lasts longer than the previous two."</div>
+<div class="opt-note">Hem — past failures used to pre-justify disengagement before any new evidence arrives</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('B2','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">"Six weeks of testing is actually more than we've had before — I'm cautious but genuinely open. I want to see the details tomorrow before I decide how I feel about it."</div>
+<div class="opt-note">Haw — holds skepticism without pre-committing to resistance; stays available to adapt based on evidence</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('B2','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">"Six weeks of testing is real. When details drop tomorrow I'm going to read everything and map out where this fits in my current workflow so I can move quickly."</div>
+<div class="opt-note">Scurry — biased toward engagement and fast movement, doesn't wait for more information</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('B2','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">"I want to understand what 'team input' actually means and what the 6-week test actually measured — both could mean anything. I'll ask tomorrow before forming a view."</div>
+<div class="opt-note">Sniff — neither accepts nor dismisses the signal; probes its actual quality before responding</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff probes the signal quality. Haw stays open pending evidence. Scurry engages immediately. Hem pre-decides based on past experience.</span></div>
+</div>
+<!-- B3 — single select, 4 clear options -->
+<div class="q-card" id="qB3">
+<div class="q-header"><span class="q-num">B3</span></div>
+<div class="q-text">Six end-of-week updates from your team, week 3 of a new system rollout. As a manager, which single update warrants your most immediate attention as an early risk signal?</div>
+<div class="visual-block">
+<div class="visual-hdr">Friday updates — week 3 of new system</div>
+<div class="update-grid">
+<div class="inbox-msg"><div class="update-from">Maria</div><div class="update-body">"Closed 3 tickets. Q2 summary filed."</div></div>
+<div class="inbox-msg"><div class="update-from">Tom</div><div class="update-body">"Approval pending on two items since Tuesday. Following up Monday."</div></div>
+<div class="inbox-msg"><div class="update-from">Alex</div><div class="update-body">"Good week. Processed everything through the new portal — took a bit longer but manageable."</div></div>
+<div class="inbox-msg"><div class="update-from">Priya</div><div class="update-body">"Had to re-enter two submissions — system timed out. Both eventually went through."</div></div>
+<div class="inbox-msg"><div class="update-from">Dana</div><div class="update-body">"All good. Wrapped up the migration notes and sent to the archive."</div></div>
+<div class="inbox-msg"><div class="update-from">Carlos</div><div class="update-body">"Covered for two team members. Noticed the dashboard numbers don't match what I submitted — will check settings."</div></div>
+</div>
+</div>
+<div class="options" id="opts-B3">
+
+
+
+
+
+      <div class="opt" data-style="scurry" onclick="pick('B3','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Priya — a system timeout that forced re-entry is the most concrete operational failure this week. I'd follow up with IT immediately to confirm it's a known bug and get a fix timeline.</div>
+<div class="opt-note">Scurry — acts on the most visible, actionable failure — misses the quieter but more dangerous data integrity signal</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('B3','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Carlos — a dashboard mismatch with submitted data is a silent data integrity issue. It won't announce itself, and it compounds invisibly with volume. That's the hardest kind of system failure to catch.</div>
+<div class="opt-note">Sniff — identifies the non-obvious signal with the highest latent risk, not the loudest one</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('B3','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Carlos — but I'd also loop in Priya and Tom in the same conversation. A data mismatch is the most serious risk, but the three signals together suggest week 3 reliability issues that need a coordinated response.</div>
+<div class="opt-note">Haw — identifies the primary risk and adapts the response to address the broader pattern, not just the single signal</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('B3','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Tom — two pending approvals since Tuesday is a visible process bottleneck. I'd address that first since it has direct timeline implications and the other team members are likely waiting on it.</div>
+<div class="opt-note">Hem — focuses on the most visible and socially legible problem, avoids the systemic data risk that requires more interpretation</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">The loudest problem isn't always the most dangerous one. What you prioritise under ambiguity reflects your change response instinct.</span></div>
+</div>
+<!-- B4 — converted from ranking to standard single-select -->
+<div class="q-card" id="qB4">
+<div class="q-header"><span class="q-num">B4</span></div>
+<div class="q-text">A major change just rolled out. Your team is struggling and you have limited time today. Four options are in front of you. Which one do you do first?</div>
+<div class="options" id="opts-B4">
+
+
+
+
+
+      <div class="opt" data-style="hem" onclick="pick('B4','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Escalate to leadership and request a formal pause in the rollout until the team is better prepared — proceeding while the team is struggling creates risk that leadership should be aware of before it becomes a larger problem.</div>
+<div class="opt-note">Hem — uses protection framing to stop forward movement rather than navigate through it</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('B4','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Spend 60–90 minutes mapping exactly where the process is breaking down before doing anything else — acting without that picture risks wasting effort or fixing the wrong thing.</div>
+<div class="opt-note">Sniff — diagnoses before acting, accepts the short-term cost of delay to prevent wasted effort</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('B4','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Schedule a focused 30-minute team debrief to surface exactly what's failing and why — that conversation will produce a better and faster fix than acting on assumptions.</div>
+<div class="opt-note">Haw — adapts through structured reflection, builds a shared understanding before committing to a fix</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('B4','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Send the team a working interim workaround right now, even if it's imperfect — the team is blocked and getting them moving again is worth more than a perfect solution later.</div>
+<div class="opt-note">Scurry — unblocks the team immediately, accepts imperfection in exchange for momentum</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">What you do first under pressure is more revealing than what you do eventually. All four approaches have merit — the sequence shows the instinct.</span></div>
+</div>
+<!-- B5 -->
+<div class="q-card" id="qB5">
+<div class="q-header"><span class="q-num">B5</span></div>
+<div class="q-text">Your team's new 8-step intake process. Leadership reviewed and approved it. What's the highest-risk step — and why is it harder to see than it looks?</div>
+<div class="visual-block">
+<div class="visual-hdr">New intake process — 8 steps</div>
+<svg style="width:100%;display:block" viewbox="0 0 560 115" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<style>.bn{font-size:9px;fill:#1A1814}.bs{font-size:8px;fill:#6B6760}.bw{font-size:8px;fill:#A32D2D}</style>
+<marker id="arr" markerheight="5" markerwidth="5" orient="auto" refx="3" refy="2.5"><path d="M0,0 L5,2.5 L0,5 Z" fill="#B4B2A9"></path></marker>
+</defs>
+<rect fill="#E1F5EE" height="44" rx="3" stroke="#5DCAA5" stroke-width=".5" width="56" x="6" y="30"></rect>
+<text class="bn" text-anchor="middle" x="34" y="49">Submit</text><text class="bs" text-anchor="middle" x="34" y="60">request</text>
+<line marker-end="url(#arr)" stroke="#B4B2A9" stroke-width="1" x1="62" x2="72" y1="52" y2="52"></line>
+<rect fill="#E1F5EE" height="44" rx="3" stroke="#5DCAA5" stroke-width=".5" width="56" x="72" y="30"></rect>
+<text class="bn" text-anchor="middle" x="100" y="49">Auto-</text><text class="bs" text-anchor="middle" x="100" y="60">classify</text>
+<line marker-end="url(#arr)" stroke="#B4B2A9" stroke-width="1" x1="128" x2="138" y1="52" y2="52"></line>
+<rect fill="#FCEBEB" height="44" rx="3" stroke="#E24B4A" stroke-width="1.5" width="56" x="138" y="30"></rect>
+<text class="bn" text-anchor="middle" x="166" y="46">Manual</text><text class="bs" text-anchor="middle" x="166" y="57">triage</text><text class="bw" text-anchor="middle" x="166" y="68">1 person</text>
+<line marker-end="url(#arr)" stroke="#B4B2A9" stroke-width="1" x1="194" x2="204" y1="52" y2="52"></line>
+<rect fill="#E1F5EE" height="44" rx="3" stroke="#5DCAA5" stroke-width=".5" width="56" x="204" y="30"></rect>
+<text class="bn" text-anchor="middle" x="232" y="49">Route to</text><text class="bs" text-anchor="middle" x="232" y="60">team lead</text>
+<line marker-end="url(#arr)" stroke="#B4B2A9" stroke-width="1" x1="260" x2="270" y1="52" y2="52"></line>
+<rect fill="#E1F5EE" height="44" rx="3" stroke="#5DCAA5" stroke-width=".5" width="56" x="270" y="30"></rect>
+<text class="bn" text-anchor="middle" x="298" y="49">Lead</text><text class="bs" text-anchor="middle" x="298" y="60">review</text>
+<line marker-end="url(#arr)" stroke="#B4B2A9" stroke-width="1" x1="326" x2="336" y1="52" y2="52"></line>
+<rect fill="#FAEEDA" height="44" rx="3" stroke="#EF9F27" stroke-width="1.2" width="56" x="336" y="30"></rect>
+<text class="bn" text-anchor="middle" x="364" y="46">System</text><text class="bs" text-anchor="middle" x="364" y="57">log — no</text><text class="bs" text-anchor="middle" x="364" y="68">confirm</text>
+<line marker-end="url(#arr)" stroke="#B4B2A9" stroke-width="1" x1="392" x2="402" y1="52" y2="52"></line>
+<rect fill="#E1F5EE" height="44" rx="3" stroke="#5DCAA5" stroke-width=".5" width="56" x="402" y="30"></rect>
+<text class="bn" text-anchor="middle" x="430" y="49">Notify</text><text class="bs" text-anchor="middle" x="430" y="60">requester</text>
+<line marker-end="url(#arr)" stroke="#B4B2A9" stroke-width="1" x1="458" x2="468" y1="52" y2="52"></line>
+<rect fill="#E1F5EE" height="44" rx="3" stroke="#5DCAA5" stroke-width=".5" width="56" x="468" y="30"></rect>
+<text class="bn" text-anchor="middle" x="496" y="49">Close</text><text class="bs" text-anchor="middle" x="496" y="60">ticket</text>
+<text style="font-size:8px;fill:#E24B4A" text-anchor="middle" x="166" y="86">visible risk</text>
+<text style="font-size:8px;fill:#BA7517" text-anchor="middle" x="364" y="86">silent step</text>
+</svg>
+</div>
+<div class="options" id="opts-B5">
+
+
+
+
+
+      <div class="opt" data-style="haw" onclick="pick('B5','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Step 6 — "system log, no confirmation" means items can fall through silently with no one downstream knowing until a requester complains weeks later. It's harder to see than Step 3 and harder to recover from.</div>
+<div class="opt-note">Haw — identifies the less obvious but more structurally dangerous failure mode in the process</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('B5','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Step 3 — one person handling all manual triage is an obvious single point of failure. I'd immediately propose a backup or coverage policy before volume increases.</div>
+<div class="opt-note">Scurry — acts fast on the most visible, diagram-flagged risk; misses the less obvious silent failure mode</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('B5','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Step 3 and Step 6 together — a single-person bottleneck feeding directly into a silent logging step means failures compound without anyone noticing. Neither risk alone is as dangerous as both in sequence.</div>
+<div class="opt-note">Sniff — identifies the compound risk pattern, not just individual flagged steps</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('B5','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Leadership reviewed and approved this process — if there were a meaningful structural problem, it would have been caught. Eight steps is standard for this kind of workflow and the flagged risks are already visible to the team.</div>
+<div class="opt-note">Hem — authority approval used as a substitute for independent structural analysis</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">The step highlighted on the diagram is visible by design. The harder answer reads past the obvious signal.</span></div>
+</div>
+<!-- B6 -->
+<div class="q-card" id="qB6">
+<div class="q-header"><span class="q-num">B6</span></div>
+<div class="q-text">Two versions of the same dashboard. Your manager says "just a cosmetic update." How many meaningful <em>operational</em> changes do you count — and how do you respond?</div>
+<div class="visual-block">
+<div class="visual-hdr">Dashboard — before and after "cosmetic update"</div>
+<svg style="width:100%;display:block" viewbox="0 0 560 178" xmlns="http://www.w3.org/2000/svg">
+<defs><style>.dm{font-size:9px;fill:#6B6760}.dv{font-size:13px;font-weight:500}</style></defs>
+<text style="font-size:10px;font-weight:500;fill:#6B6760" text-anchor="middle" x="140" y="14">Before</text>
+<rect fill="#F2EFE9" height="150" rx="5" stroke="#e0ddd8" stroke-width=".5" width="248" x="16" y="20"></rect>
+<rect fill="#fff" height="48" rx="3" stroke="#e0ddd8" stroke-width=".5" width="66" x="26" y="30"></rect>
+<text class="dm" text-anchor="middle" x="59" y="48">Open</text><text class="dv" style="fill:#0F6E56" text-anchor="middle" x="59" y="65">24</text>
+<rect fill="#fff" height="48" rx="3" stroke="#e0ddd8" stroke-width=".5" width="66" x="100" y="30"></rect>
+<text class="dm" text-anchor="middle" x="133" y="48">Closed</text><text class="dv" style="fill:#1A1814" text-anchor="middle" x="133" y="65">18</text>
+<rect fill="#fff" height="48" rx="3" stroke="#e0ddd8" stroke-width=".5" width="66" x="174" y="30"></rect>
+<text class="dm" text-anchor="middle" x="207" y="48">Overdue</text><text class="dv" style="fill:#E24B4A" text-anchor="middle" x="207" y="65">3</text>
+<text class="dm" x="26" y="97">Updated: Tuesday</text>
+<text class="dm" x="26" y="112">Owner: Team Lead</text>
+<text class="dm" x="26" y="127">View: All members</text>
+<text class="dm" x="26" y="142">Filter: None</text>
+<text class="dm" x="26" y="157">Export: CSV</text>
+<text class="dm" style="fill:#B4B2A9" x="26" y="165">Theme: Default</text>
+<text style="font-size:10px;font-weight:500;fill:#6B6760" text-anchor="middle" x="420" y="14">After</text>
+<rect fill="#F2EFE9" height="150" rx="5" stroke="#e0ddd8" stroke-width=".5" width="248" x="296" y="20"></rect>
+<rect fill="#fff" height="48" rx="3" stroke="#e0ddd8" stroke-width=".5" width="66" x="306" y="30"></rect>
+<text class="dm" text-anchor="middle" x="339" y="48">Open</text><text class="dv" style="fill:#0F6E56" text-anchor="middle" x="339" y="65">24</text>
+<rect fill="#fff" height="48" rx="3" stroke="#e0ddd8" stroke-width=".5" width="66" x="380" y="30"></rect>
+<text class="dm" text-anchor="middle" x="413" y="48">Closed</text><text class="dv" style="fill:#1A1814" text-anchor="middle" x="413" y="65">18</text>
+<rect fill="#FAEEDA" height="48" rx="3" stroke="#EF9F27" stroke-width="1" width="66" x="454" y="30"></rect>
+<text class="dm" text-anchor="middle" x="487" y="48">Overdue</text><text class="dv" style="fill:#BA7517" text-anchor="middle" x="487" y="65">7</text>
+<text class="dm" x="306" y="97">Updated: <tspan style="fill:#185FA5">Real-time</tspan></text>
+<text class="dm" x="306" y="112">Owner: <tspan style="fill:#E24B4A">Unassigned</tspan></text>
+<text class="dm" x="306" y="127">View: <tspan style="fill:#185FA5">My tasks only</tspan></text>
+<text class="dm" x="306" y="142">Filter: <tspan style="fill:#185FA5">Priority: High</tspan></text>
+<text class="dm" x="306" y="157">Export: CSV</text>
+<text class="dm" style="fill:#B4B2A9" x="306" y="165">Theme: Compact</text>
+</svg>
+</div>
+<div class="options" id="opts-B6">
+
+
+
+
+
+      <div class="opt" data-style="scurry" onclick="pick('B6','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">The overdue count jumped from 3 to 7 and the owner is now unassigned — those two need to be corrected or explained before anyone acts on this dashboard today.</div>
+<div class="opt-note">Scurry — moves fast on the most urgent and visible changes without counting all of them first</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('B6','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">At least four things changed that affect how different people will read this data — I'd flag the operational changes to the team and ask whether everyone's personal view and filter settings have updated as intended.</div>
+<div class="opt-note">Haw — considers the second-order impact on team alignment, not just the changed data itself</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('B6','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">The manager reviewed this — I'd note the overdue jump but trust their framing that the rest is cosmetic rather than spend time second-guessing a deliberate system update.</div>
+<div class="opt-note">Hem — authority framing replaces independent observation, stops looking after the most obvious change</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('B6','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Five operational changes: overdue count, update timing, owner, view scope, and active filter — theme and export are cosmetic. I'd document all five and flag them to the team so no one is caught off guard.</div>
+<div class="opt-note">Sniff — precisely separates cosmetic from operational, flags all meaningful changes before they cause confusion</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Cosmetic and operational are defined by impact on decisions — not by whether someone called the update cosmetic.</span></div>
+</div>
+<!-- B7 -->
+<div class="q-card" id="qB7">
+<div class="q-header"><span class="q-num">B7</span></div>
+<p class="context-text">4:48 PM — report due at 5:00 PM. 12 minutes left.</p>
+<div class="q-text">The export system went down. You have a data extract from this morning — accurate but missing today's 3 updates. A colleague offered her copy from 2 hours ago, but it includes client data from another account you're not authorised to access. What do you do first?</div>
+<div class="options" id="opts-B7">
+
+
+
+
+
+      <div class="opt" data-style="hem" onclick="pick('B7','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">Use your colleague's export — strip the other account's data manually before sending. You know what belongs to which client, and 12 minutes is enough to do it carefully and accurately.</div>
+<div class="opt-note">Hem — a compliance boundary crossed under deadline pressure, rationalised as careful handling</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('B7','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">Before acting, quickly confirm what the 3 missing updates actually contain — if they're minor, the morning extract is your answer; if they're material, that changes everything, including which option is viable.</div>
+<div class="opt-note">Sniff — assesses the actual gap before acting, rather than defaulting to speed or caution</div>
+</div>
+</div>
+      <div class="opt" data-style="haw" onclick="pick('B7','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">Email the client now to explain the outage and buy 30 minutes, then use that time to manually add the 3 updates to your morning extract — deliver something complete and relationship intact.</div>
+<div class="opt-note">Haw — adapts the situation deliberately: protects quality, relationship, and compliance simultaneously</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('B7','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">Send the morning extract now with a clear note: "System outage — 3 updates from today will follow by 5:15." Honest, on time, and no compliance exposure. Move.</div>
+<div class="opt-note">Scurry — delivers what exists immediately with full transparency, no risk created, no time wasted</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Under deadline pressure, the most resourceful-looking option is sometimes the most dangerous one.</span></div>
+</div>
+<!-- B8 -->
+<div class="q-card" id="qB8">
+<div class="q-header"><span class="q-num">B8</span></div>
+<div class="q-text">Four weeks into a change, you realise you've been doing a key step wrong. Fixing it means redoing two weeks of work. Your approach hasn't caused a visible problem yet — but it will eventually. Which response is actually yours?</div>
+<div class="options" id="opts-B8">
+
+
+
+
+
+      <div class="opt" data-style="haw" onclick="pick('B8','A',this)">
+<span class="opt-letter">A</span>
+<div class="opt-body">
+<div class="opt-text">"I'll be transparent with my manager about the error and what correcting it requires — avoiding that conversation would make it significantly worse when it eventually becomes visible anyway."</div>
+<div class="opt-note">Haw — transparency is itself an adaptation; corrects the course and builds trust simultaneously</div>
+</div>
+</div>
+      <div class="opt" data-style="hem" onclick="pick('B8','B',this)">
+<span class="opt-letter">B</span>
+<div class="opt-body">
+<div class="opt-text">"Nothing has gone visibly wrong yet. Two weeks of rework for a theoretical future problem feels disproportionate — I'll document the risk and revisit it if a real issue actually surfaces."</div>
+<div class="opt-note">Hem — sophisticated framing of avoidance as proportionate risk management; defers correction indefinitely</div>
+</div>
+</div>
+      <div class="opt" data-style="sniff" onclick="pick('B8','C',this)">
+<span class="opt-letter">C</span>
+<div class="opt-body">
+<div class="opt-text">"Before I redo anything, I want to understand exactly what I misread about the change — the rework matters less than making sure I haven't made the same misunderstanding somewhere else."</div>
+<div class="opt-note">Sniff — diagnoses the root cause of the error before correcting; learning the pattern is the first priority</div>
+</div>
+</div>
+      <div class="opt" data-style="scurry" onclick="pick('B8','D',this)">
+<span class="opt-letter">D</span>
+<div class="opt-body">
+<div class="opt-text">"I'll start the rework today. Two weeks is a lot, but I'd rather absorb the cost now than have a compounding problem surface later when it's harder to explain and fix."</div>
+<div class="opt-note">Scurry — acts immediately on the known error, doesn't pause for analysis or disclosure</div>
+</div>
+</div>
+    </div>
+<div class="q-footer"><span class="q-hint">Sniff understands first. Scurry fixes first. Haw discloses first. Hem defers. All four feel reasonable in the moment.</span></div>
+</div>
+<div id="warn-msg">Please answer all 16 questions before submitting.</div>
+<button id="submit-btn" onclick="submitTest()">Submit — see my results</button>
+<!-- ── RESULTS ── -->
+<div id="results-panel">
+<div class="results-header">
+<h2>Your Change Response Profile</h2>
+<p>Across 16 situational and behavioral questions.</p>
+</div>
+<div class="scores-grid">
+<div class="score-card score-sniff">
+<div class="score-label">Sniff</div>
+<div class="score-count" id="cnt-sniff">—</div>
+<div class="score-band" id="band-sniff"></div>
+<div class="score-bar-bg"><div class="score-bar" id="bar-sniff" style="width:0%"></div></div>
+</div>
+<div class="score-card score-scurry">
+<div class="score-label">Scurry</div>
+<div class="score-count" id="cnt-scurry">—</div>
+<div class="score-band" id="band-scurry"></div>
+<div class="score-bar-bg"><div class="score-bar" id="bar-scurry" style="width:0%"></div></div>
+</div>
+<div class="score-card score-hem">
+<div class="score-label">Hem</div>
+<div class="score-count" id="cnt-hem">—</div>
+<div class="score-band" id="band-hem"></div>
+<div class="score-bar-bg"><div class="score-bar" id="bar-hem" style="width:0%"></div></div>
+</div>
+<div class="score-card score-haw">
+<div class="score-label">Haw</div>
+<div class="score-count" id="cnt-haw">—</div>
+<div class="score-band" id="band-haw"></div>
+<div class="score-bar-bg"><div class="score-bar" id="bar-haw" style="width:0%"></div></div>
+</div>
+</div>
+<div class="primary-style-card" id="primary-card"></div>
+<div class="disclaimer-card">
+<strong>How to read these results.</strong> Scores show how often each response style appeared across your 16 answers. Because all four styles have exactly one option per question, an equal distribution (4 per style) is the baseline — scores above that baseline reflect a genuine lean.
+      The interpretation bands — <em>Occasional, Moderate, Consistent, Dominant</em> — describe the frequency of the pattern, not its absolute quality. <strong>This is a structured reflection exercise, not a psychometric instrument.</strong> It is designed to surface instincts and start conversations, not to produce clinically validated scores. Use it accordingly — as a prompt for self-examination, not as a fixed label.
+    </div>
+<p style="font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:2rem">Scroll up to review each question — all answers are now revealed with explanations.</p>
+</div>
+</main>
+<script>
+const TOTAL_TIME = 25 * 60;
+let remaining = TOTAL_TIME;
+let expired = false;
+let timerInterval;
+let timerStarted = false;
+const answers = {};
+
+// Interpretation bands: out of 16 questions, one style per question
+// Baseline = 4 (25%). Bands: 1-3 Occasional, 4-6 Moderate, 7-10 Consistent, 11+ Dominant
+function getBand(count) {
+  if (count <= 3) return 'Occasional';
+  if (count <= 6) return 'Moderate';
+  if (count <= 10) return 'Consistent';
+  return 'Dominant';
+}
+
+const styleDescriptions = {
+  sniff: {
+    label: 'Sniff', color: '#0F6E56',
+    desc: 'Your primary instinct is to detect the signal before acting on it. In changing environments, you tend to notice what others miss — the quiet metric that disappeared, the colleague who changed their behaviour, the pattern in the numbers that contradicts the official story. Your risk is spending too long in observation mode when a decision or move is already overdue.',
+    when: 'Most valuable when: the change is poorly understood, information is contradictory, or action taken on bad data would be costly to reverse.'
+  },
+  scurry: {
+    label: 'Scurry', color: '#854F0B',
+    desc: 'Your primary instinct is to move. When change hits, you act on what you have rather than waiting for a complete picture. You find workarounds, test paths, and keep things moving — even when the situation is still unclear. Your risk is mistaking motion for progress, and occasionally moving in a direction that better information would have redirected.',
+    when: 'Most valuable when: speed genuinely matters, the cost of delay exceeds the cost of an imperfect first move, and you can correct course quickly.'
+  },
+  hem: {
+    label: 'Hem', color: '#A32D2D',
+    desc: 'Your instincts tend toward protection of the status quo — often expressed through caution, approval-seeking, or deferral that feels reasonable in the moment. This doesn\'t mean you\'re unwilling to change, but that your first response to uncertainty is to find a reason to wait. The pattern is worth examining because the framing that accompanies it usually sounds professional and defensible, which makes it harder to recognise as resistance.',
+    when: 'Worth asking: when the reason to wait sounds very reasonable, is it actually reasonable — or is it doing the work of something else?'
+  },
+  haw: {
+    label: 'Haw', color: '#185FA5',
+    desc: 'Your primary instinct is deliberate adaptation — updating your approach when evidence warrants it, surfacing uncertainty to the right people, and moving forward without requiring perfect conditions. You tend to distinguish between resistance that protects something real and resistance that merely protects comfort. Your risk is over-processing before committing, or communicating uncertainty in ways that slow others down.',
+    when: 'Most valuable when: changes require buy-in, mistakes need to be acknowledged transparently, or the team needs someone who can model adapting without losing credibility.'
+  }
+};
+
+function startTest() {
+  if (timerStarted) return;
+  timerStarted = true;
+  document.body.classList.add('test-started');
+  startTimer();
+  document.getElementById('qA1')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function startTimer() {
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    remaining--;
+    updateTimerDisplay();
+    updateProgressBar();
+    if (remaining <= 0) { clearInterval(timerInterval); lockTest(); }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(Math.max(remaining, 0) / 60);
+  const s = Math.max(remaining, 0) % 60;
+  const el = document.getElementById('timer');
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.className = '';
+  if (remaining <= 0) { el.classList.add('expired'); el.textContent = '00:00'; }
+  else if (remaining <= 60) el.classList.add('danger');
+  else if (remaining <= 5 * 60) el.classList.add('warn');
+}
+
+function updateProgressBar() {
+  const pct = ((TOTAL_TIME - remaining) / TOTAL_TIME) * 100;
+  const bar = document.getElementById('progress-bar');
+  bar.style.width = pct + '%';
+  if (remaining <= 60) bar.style.background = 'var(--timer-danger)';
+  else if (remaining <= 5 * 60) bar.style.background = 'var(--timer-warn)';
+}
+
+function lockTest() {
+  expired = true;
+  document.getElementById('expired-banner').style.display = 'block';
+  document.querySelectorAll('.opt').forEach(o => { o.classList.add('disabled'); o.style.pointerEvents = 'none'; });
+}
+
+function pick(qid, letter, el) {
+  if (expired) return;
+  document.querySelectorAll(`#opts-${qid} .opt`).forEach(o => { o.classList.remove('selected', 'user-picked'); });
+  el.classList.add('selected');
+  answers[qid] = { letter, style: el.dataset.style };
+  document.getElementById(`q${qid}`).classList.add('answered');
+}
+
+function isAnswered(qid) {
+  return !!answers[qid];
+}
+
+function submitTest() {
+  if (!timerStarted) return;
+  const qids = ['A1','A2','A3','A4','A5','A6','A7','A8','B1','B2','B3','B4','B5','B6','B7','B8'];
+  const notAnswered = qids.filter(id => !isAnswered(id));
+  if (notAnswered.length > 0 && !expired) {
+    document.getElementById('warn-msg').style.display = 'block';
+    document.getElementById('q' + notAnswered[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  document.getElementById('warn-msg').style.display = 'none';
+  clearInterval(timerInterval);
+  if (!expired) lockTest();
+  revealAll();
+  calcScores();
+  document.getElementById('results-panel').style.display = 'block';
+  document.getElementById('submit-btn').style.display = 'none';
+  document.getElementById('results-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function revealAll() {
+  document.querySelectorAll('.q-footer').forEach(f => { f.style.display = 'flex'; });
+  ['A1','A2','A3','A4','A5','A6','A7','A8','B1','B2','B3','B4','B5','B6','B7','B8'].forEach(qid => {
+    document.querySelectorAll(`#opts-${qid} .opt`).forEach(opt => {
+      const s = opt.dataset.style;
+      opt.classList.add('disabled');
+      if (s) opt.classList.add('rev-' + s);
+      const note = opt.querySelector('.opt-note');
+      if (note) note.style.display = 'block';
+      if (answers[qid] && opt.classList.contains('selected')) opt.classList.add('user-picked');
+    });
+  });
+}
+
+function calcScores() {
+  const counts = { sniff: 0, scurry: 0, hem: 0, haw: 0 };
+  ['A1','A2','A3','A4','A5','A6','A7','A8','B1','B2','B3','B4','B5','B6','B7','B8'].forEach(qid => {
+    if (!answers[qid]) return;
+    const s = answers[qid].style;
+    if (s && counts[s] !== undefined) counts[s]++;
+  });
+
+  const total = 16;
+  ['sniff','scurry','hem','haw'].forEach(s => {
+    const c = counts[s];
+    const pct = Math.round((c / total) * 100);
+    const band = getBand(c);
+    document.getElementById('cnt-' + s).textContent = `${c} / 16`;
+    document.getElementById('band-' + s).textContent = band;
+    document.getElementById('bar-' + s).style.width = pct + '%';
+  });
+
+  const primary = Object.keys(counts).reduce((a, b) => counts[a] >= counts[b] ? a : b);
+  const d = styleDescriptions[primary];
+  const others = Object.keys(counts)
+    .filter(s => s !== primary && counts[s] > 0)
+    .sort((a, b) => counts[b] - counts[a]);
+
+  document.getElementById('primary-card').innerHTML = `
+    <h3 style="color:${d.color}">${d.label} — primary style (${counts[primary]} / 16)</h3>
+    <p style="margin-top:10px">${d.desc}</p>
+    <p style="margin-top:10px;font-size:13px;font-style:italic;color:var(--text-muted)">${d.when}</p>
+    ${others.length ? `
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px">Secondary patterns</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${others.map(s => `<span style="font-size:12px;padding:4px 10px;border-radius:20px;background:var(--${s}-bg);color:var(--${s})">${styleDescriptions[s].label}: ${counts[s]} (${getBand(counts[s])})</span>`).join('')}
+      </div>
+    </div>` : ''}`;
+}
+
+updateTimerDisplay();
+updateProgressBar();
+</script>
+</body>
+</html>
