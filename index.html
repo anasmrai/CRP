@@ -189,6 +189,14 @@ body.test-started .legend-strip { display: none; }
 #warn-msg { display: none; text-align: center; color: var(--hem); font-size: 13px; margin-top: 10px; }
 
 svg text { font-family: 'DM Sans', sans-serif; }
+
+/* Keep submit hidden until the assessment starts */
+body:not(.test-started) #submit-btn { display: none !important; }
+
+
+/* Hide time-up banner when the user submits before the timer expires */
+body.submitted-before-time #expired-banner { display: none !important; }
+
 </style>
 </head>
 <body>
@@ -207,24 +215,7 @@ svg text { font-family: 'DM Sans', sans-serif; }
 <p>16 questions, 25 minutes. Every answer sounds reasonable — choose what genuinely reflects how you think and act, not what sounds best. Results are revealed with full explanations when you submit.</p>
 </div>
 <!-- Style legend shown before test starts -->
-<div class="legend-strip">
-<div class="legend-item leg-sniff">
-<div class="legend-name">Sniff</div>
-<div class="legend-desc">Detects signals of change early. Pauses to read the pattern before acting.</div>
-</div>
-<div class="legend-item leg-scurry">
-<div class="legend-name">Scurry</div>
-<div class="legend-desc">Moves fast on incomplete information. Values momentum over certainty.</div>
-</div>
-<div class="legend-item leg-hem">
-<div class="legend-name">Hem</div>
-<div class="legend-desc">Resists change — often through caution, approval-seeking, or delay framed as prudence.</div>
-</div>
-<div class="legend-item leg-haw">
-<div class="legend-name">Haw</div>
-<div class="legend-desc">Adapts deliberately. Once the change makes sense, moves forward and updates their approach.</div>
-</div>
-</div>
+
 <div id="start-panel">
 <button id="start-btn" onclick="startTest()">Start the assessment</button>
 </div>
@@ -321,7 +312,15 @@ svg text { font-family: 'DM Sans', sans-serif; }
 <div class="visual-block">
 <div class="visual-hdr">Team activity — weeks 1–5 (transition started week 3)</div>
 <svg style="width:100%;display:block" viewbox="0 0 560 205" xmlns="http://www.w3.org/2000/svg">
-<style>.ax{font-size:10px;fill:#9E9B96}.note{font-size:9px}</style>
+<style>.ax{font-size:10px;fill:#9E9B96}.note{font-size:9px}
+/* Keep submit hidden until the assessment starts */
+body:not(.test-started) #submit-btn { display: none !important; }
+
+
+/* Hide time-up banner when the user submits before the timer expires */
+body.submitted-before-time #expired-banner { display: none !important; }
+
+</style>
 <line stroke="#e0ddd8" stroke-width=".5" x1="90" x2="90" y1="15" y2="162"></line>
 <line stroke="#e0ddd8" stroke-width=".5" x1="90" x2="545" y1="162" y2="162"></line>
 <line stroke="#F09595" stroke-dasharray="3,3" stroke-width=".5" x1="275" x2="275" y1="10" y2="166"></line>
@@ -792,7 +791,15 @@ svg text { font-family: 'DM Sans', sans-serif; }
 <div class="visual-hdr">New intake process — 8 steps</div>
 <svg style="width:100%;display:block" viewbox="0 0 560 115" xmlns="http://www.w3.org/2000/svg">
 <defs>
-<style>.bn{font-size:9px;fill:#1A1814}.bs{font-size:8px;fill:#6B6760}.bw{font-size:8px;fill:#A32D2D}</style>
+<style>.bn{font-size:9px;fill:#1A1814}.bs{font-size:8px;fill:#6B6760}.bw{font-size:8px;fill:#A32D2D}
+/* Keep submit hidden until the assessment starts */
+body:not(.test-started) #submit-btn { display: none !important; }
+
+
+/* Hide time-up banner when the user submits before the timer expires */
+body.submitted-before-time #expired-banner { display: none !important; }
+
+</style>
 <marker id="arr" markerheight="5" markerwidth="5" orient="auto" refx="3" refy="2.5"><path d="M0,0 L5,2.5 L0,5 Z" fill="#B4B2A9"></path></marker>
 </defs>
 <rect fill="#E1F5EE" height="44" rx="3" stroke="#5DCAA5" stroke-width=".5" width="56" x="6" y="30"></rect>
@@ -866,7 +873,15 @@ svg text { font-family: 'DM Sans', sans-serif; }
 <div class="visual-block">
 <div class="visual-hdr">Dashboard — before and after "cosmetic update"</div>
 <svg style="width:100%;display:block" viewbox="0 0 560 178" xmlns="http://www.w3.org/2000/svg">
-<defs><style>.dm{font-size:9px;fill:#6B6760}.dv{font-size:13px;font-weight:500}</style></defs>
+<defs><style>.dm{font-size:9px;fill:#6B6760}.dv{font-size:13px;font-weight:500}
+/* Keep submit hidden until the assessment starts */
+body:not(.test-started) #submit-btn { display: none !important; }
+
+
+/* Hide time-up banner when the user submits before the timer expires */
+body.submitted-before-time #expired-banner { display: none !important; }
+
+</style></defs>
 <text style="font-size:10px;font-weight:500;fill:#6B6760" text-anchor="middle" x="140" y="14">Before</text>
 <rect fill="#F2EFE9" height="150" rx="5" stroke="#e0ddd8" stroke-width=".5" width="248" x="16" y="20"></rect>
 <rect fill="#fff" height="48" rx="3" stroke="#e0ddd8" stroke-width=".5" width="66" x="26" y="30"></rect>
@@ -1154,7 +1169,21 @@ function isAnswered(qid) {
   return !!answers[qid];
 }
 
+
+function hideExpiredBannerBeforeTime() {
+  if (!expired) {
+    document.body.classList.add('submitted-before-time');
+    const banner = document.getElementById('expired-banner');
+    if (banner) banner.style.display = 'none';
+  }
+}
+
 function submitTest() {
+  hideExpiredBannerBeforeTime();
+  // hide expired banner when submitted before time is up
+  if (!expired) {
+    document.getElementById('expired-banner').style.display = 'none';
+  }
   if (!timerStarted) return;
   const qids = ['A1','A2','A3','A4','A5','A6','A7','A8','B1','B2','B3','B4','B5','B6','B7','B8'];
   const notAnswered = qids.filter(id => !isAnswered(id));
